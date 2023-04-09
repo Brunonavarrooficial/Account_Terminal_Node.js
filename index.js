@@ -18,6 +18,7 @@ function operation() {
                 'Consultar Saldo',
                 'Depositar',
                 'Sacar',
+                'Transferencia',
                 'Sair'
             ],
         },
@@ -36,6 +37,8 @@ function operation() {
             } else if (action === 'Sair') {
                 console.log(chalk.bgBlue.black('Obrigado por usar o Accounts! '))
                 process.exit()
+            } else if (action === 'Transferencia') {
+                transfer()
             }
         })
         .catch((err) => console.log(err))
@@ -236,7 +239,92 @@ function removeAmount(accountName, amount) {
     )
 
     console.log(chalk.green(`Foi Realizado um saque de R$${amount} da sua conta!`))
+    chalkResult(accountData)
 
     operation()
 
+}
+
+function transfer() {
+    inquirer.prompt([
+        {
+            name: 'accountName',
+            message: 'Qual o nome da sua conta?'
+        },
+        {
+            name: 'accountTransfer',
+            message: 'Qual conta deseja realizar a transferência?'
+        },
+        {
+            name: 'amount',
+            message: 'Quanto deseja transferir?'
+        }
+    ]).then((answer) => {
+
+        const accountName = answer['accountName']
+        const accountTransfer = answer['accountTransfer']
+        const amount = answer['amount']
+
+        if (!checkAccount(accountName)) {
+            return transfer()
+        }
+
+        if (!checkAccount(accountTransfer)) {
+            return transfer()
+        }
+
+        if (!amount) {
+            console.log(chalk.bgRed.black('Ocorreu um erro tente novamente mais tarde!'))
+            return transfer()
+        }
+
+        transferAmount(accountName, accountTransfer, amount)
+
+    }).catch((err) => console.log(err))
+}
+
+
+
+function transferAmount(accountName, accountTranfer, amount) {
+    const accountData = getAccount(accountName)
+    const accountDataTransfer = getAccount(accountTranfer)
+
+    if (accountData.balance < amount) {
+        console.log(chalk.bgRed.black('saldo atual é: ' + 'R$' + accountData.balance + ' você tem R$1000 de saldo no cheque especial'))
+    }
+
+    accountData.balance = parseFloat(accountData.balance) - parseFloat(amount)
+    accountDataTransfer.balance = parseFloat(accountDataTransfer.balance) + parseFloat(amount)
+
+    if (accountData.balance < -1000) {
+        console.log(chalk.bgRed.black('Valor limite indisponível! o valor solicitado de: ' + 'R$' + amount + ' ultrapassou o cheque especial !'))
+        return transfer()
+    }
+
+    compileFile(accountData, accountName)
+    compileFile(accountDataTransfer, accountTranfer)
+
+    console.log(chalk.green(`Foi Realizado uma transferência no valor de R$${amount} para conta ${accountTranfer}!`))
+    chalkResult(accountData)
+
+    operation()
+
+}
+
+function chalkResult(acount) {
+    if (acount.balance > 0) {
+        console.log(chalk.green(`Saldo Atual é de: R$${acount.balance}`))
+    } else {
+        console.log(chalk.bgRed.black(`Saldo Atual é de: R$${acount.balance}`))
+    }
+}
+
+function compileFile(file, fileOriginal) {
+    return fs.writeFileSync(
+        `accounts/${fileOriginal}.json`,
+        JSON.stringify(file),
+        function (err) {
+            console.log(err)
+        }
+    )
 }
