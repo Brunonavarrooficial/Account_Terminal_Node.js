@@ -217,11 +217,15 @@ function removeAmount(accountName, amount) {
     }
 
     if (accountData.balance < amount) {
-        console.log(chalk.bgRed.black('Valor indisponível! Saldo insufíciente!'))
-        return withDraw()
+        console.log(chalk.bgRed.black('saldo atual é: ' + 'R$' + accountData.balance + ' você tem R$1000 de saldo no cheque especial'))
     }
 
     accountData.balance = parseFloat(accountData.balance) - parseFloat(amount)
+
+    if (accountData.balance < -1000) {
+        console.log(chalk.bgRed.black('Valor limite indisponível! o valor solicitado de: ' + 'R$' + amount + ' ultrapassou o cheque especial !'))
+        return withDraw()
+    }
 
     fs.writeFileSync(
         `accounts/${accountName}.json`,
